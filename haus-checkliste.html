@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Haus-Checkliste</title>
+<link rel="manifest" href="manifest-haus.json">
+<meta name="theme-color" content="#2B3A2E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Haus-Checkliste">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bevan&family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;0,6..12,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --forest:#2B3A2E; --forest-light:#3B4F3D; --canvas:#EFE6D2; --canvas-dark:#E1D5B8;
+    --campfire:#C1602C; --campfire-dark:#A24E22; --moss:#7A8B5E; --dusk:#3E5266;
+    --ink:#26281F; --cream:#FBF6EA; --stamp:#8A9A6B; font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--canvas);background-image:radial-gradient(circle at 1px 1px, rgba(43,58,46,0.07) 1px, transparent 0);background-size:22px 22px;color:var(--ink);font-family:'Nunito Sans', -apple-system, sans-serif;min-height:100vh;}
+  .wrap{max-width:920px;margin:0 auto;padding:20px 16px 60px;}
+  header{background:var(--forest);border-radius:18px;padding:22px 22px 26px;color:var(--cream);position:relative;overflow:hidden;}
+  header::before{content:"";position:absolute;right:-30px;top:-30px;width:160px;height:160px;background:var(--forest-light);border-radius:50%;opacity:.5;}
+  .title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:relative;z-index:1;}
+  h1{font-family:'Bevan', serif;font-weight:400;font-size:1.7rem;margin:0 0 4px;letter-spacing:.5px;}
+  .subtitle{margin:0;font-size:.85rem;color:#D8D2BE;font-weight:600;}
+  button{font-family:'Nunito Sans',sans-serif;cursor:pointer;border:none;}
+  .btn-ghost{background:transparent;color:var(--cream);border:1px solid #56694F;border-radius:10px;padding:7px 10px;font-size:.8rem;font-weight:700;flex-shrink:0;}
+  .btn-ghost:hover{background:var(--forest-light);}
+  .sync-note{font-size:.68rem;color:#B7C4AE;font-weight:700;margin-top:6px;display:flex;align-items:center;gap:5px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--moss);display:inline-block;}
+  .dot.err{background:var(--campfire);}
+  .trail{position:relative;z-index:1;margin-top:20px;}
+  .trail-track{position:relative;height:8px;background:#1E2B21;border-radius:6px;overflow:visible;}
+  .trail-fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg, var(--moss), var(--campfire));border-radius:6px;transition:width .5s ease;}
+  .trail-marker{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:1.15rem;transition:left .5s ease;}
+  .trail-caption{display:flex;justify-content:space-between;margin-top:8px;font-size:.78rem;color:#C9C2AC;font-weight:700;}
+  .stops{display:flex;gap:10px;overflow-x:auto;padding:18px 2px 6px;scrollbar-width:thin;}
+  .stops::-webkit-scrollbar{height:6px;}
+  .stops::-webkit-scrollbar-thumb{background:var(--canvas-dark);border-radius:6px;}
+  .stop{flex:0 0 auto;background:var(--cream);border:2px solid transparent;border-radius:14px;padding:10px 14px;text-align:center;min-width:104px;position:relative;transition:.15s;}
+  .stop:hover{transform:translateY(-2px);}
+  .stop.active{border-color:var(--campfire);background:#fff;}
+  .stop .icon{font-size:1.5rem;display:block;}
+  .stop .name{font-size:.72rem;font-weight:800;margin-top:4px;line-height:1.15;display:block;color:var(--ink);}
+  .stop .count{font-size:.68rem;color:var(--dusk);font-weight:700;margin-top:2px;display:block;}
+  .stamp-badge{position:absolute;top:-8px;right:-8px;background:var(--stamp);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.75rem;border:2px solid var(--canvas);transform:rotate(-12deg);}
+  .add-stop{border-style:dashed;border-color:var(--canvas-dark);color:var(--dusk);font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;min-width:56px;background:transparent;}
+  .card{background:var(--cream);border-radius:18px;padding:20px 20px 10px;margin-top:14px;box-shadow:0 1px 0 rgba(0,0,0,.03);}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+  .card-head h2{font-family:'Bevan',serif;font-weight:400;font-size:1.15rem;margin:0;display:flex;align-items:center;gap:8px;}
+  .card-head .cat-count{font-size:.8rem;color:var(--dusk);font-weight:700;}
+  .del-cat{background:none;color:#a99a7a;font-size:.72rem;font-weight:700;text-decoration:underline;}
+  ul.items{list-style:none;margin:10px 0 6px;padding:0;}
+  li.item{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--canvas-dark);}
+  li.item:last-child{border-bottom:none;}
+  .chk{appearance:none;-webkit-appearance:none;width:22px;height:22px;flex:0 0 auto;border:2px solid var(--moss);border-radius:7px;position:relative;cursor:pointer;background:#fff;}
+  .chk:checked{background:var(--moss);}
+  .chk:checked::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.85rem;font-weight:800;}
+  .item-text{flex:1;font-size:.94rem;font-weight:600;}
+  li.item.checked .item-text{color:#9b9585;text-decoration:line-through;}
+  .rm-item{background:none;color:#c7bda0;font-size:1rem;line-height:1;padding:2px 6px;visibility:hidden;}
+  li.item:hover .rm-item{visibility:visible;}
+  .rm-item:hover{color:var(--campfire);}
+  .add-row{display:flex;gap:8px;margin:14px 0 18px;}
+  .add-row input{flex:1;border:2px solid var(--canvas-dark);border-radius:10px;padding:9px 12px;font-family:'Nunito Sans',sans-serif;font-size:.9rem;background:#fff;}
+  .add-row input:focus{outline:none;border-color:var(--moss);}
+  .add-row button{background:var(--forest);color:var(--cream);border-radius:10px;padding:0 16px;font-weight:800;font-size:.85rem;}
+  .add-row button:hover{background:var(--forest-light);}
+  .empty{text-align:center;padding:30px 10px;color:#9b9585;font-weight:700;font-size:.9rem;}
+  .foot-note{text-align:center;font-size:.72rem;color:#9a9070;margin-top:22px;font-weight:600;}
+  .loading-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;color:var(--forest);gap:10px;text-align:center;padding:20px;}
+  .loading-screen .spin{width:34px;height:34px;border-radius:50%;border:4px solid var(--canvas-dark);border-top-color:var(--campfire);animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .setup-card{background:var(--cream);border-radius:18px;padding:26px;margin-top:16px;}
+  .setup-card h2{font-family:'Bevan',serif;font-weight:400;margin-top:0;}
+  .setup-card code{background:var(--canvas-dark);padding:2px 6px;border-radius:6px;font-size:.85rem;}
+  .setup-card .bucket-box{background:var(--forest);color:var(--cream);border-radius:10px;padding:14px;font-family:monospace;font-size:1rem;word-break:break-all;margin:14px 0;}
+  .setup-card button.primary{background:var(--campfire);color:#fff;border-radius:10px;padding:10px 18px;font-weight:800;}
+  .setup-card button.primary:hover{background:var(--campfire-dark);}
+  .setup-card ol{padding-left:20px;line-height:1.7;font-size:.92rem;}
+  @media (max-width:520px){ h1{font-size:1.35rem;} .title-row{flex-direction:column;} }
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important;transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="loading-screen" id="loadingScreen"><div class="spin"></div><div>Türen und Fenster werden kontrolliert…</div></div>
+</div>
+
+<script>
+(function(){
+
+  // ====== Konfiguration: gemeinsamer Cloud-Speicher (kvdb.io, ohne Login) ======
+  // Nach der Einrichtung hier die Bucket-ID eintragen, z.B. const SHARED_BUCKET = "AbCdEfGh12345";
+  // Verwende eine ANDERE ID als bei der Camp-Checkliste, damit sich die Listen nicht vermischen.
+  const SHARED_BUCKET = "";
+  const KV_BASE = () => `https://kvdb.io/${SHARED_BUCKET}/`;
+
+  const ICONS = { garten:"🌿", wachteln:"🐦", katze:"🐱", verschliessen:"🔒", pool:"🏊", sonstiges:"🧺" };
+
+  const DEFAULT_CATEGORIES = [
+    { id:"garten", name:"Garten & Bewässerung", items:[
+      "Bewässerungsanlage auf Ferienprogramm stellen","Topfpflanzen zusammenstellen & gut giessen",
+      "Rasen kurz vor Abreise noch mähen","Nachbarn/Bekannte fürs Giessen informieren",
+      "Aussenwasserhahn bei Bedarf schliessen"
+    ]},
+    { id:"wachteln", name:"Wachteln", items:[
+      "Futtervorrat für Tierbetreuer bereitstellen","Wasserversorgung sicherstellen / auffüllen",
+      "Stall & Voliere vor Abreise reinigen","Fütterungsanleitung aufschreiben",
+      "Kontakt mit Tierbetreuer bestätigen","Ei-Sammel-Rhythmus notieren"
+    ]},
+    { id:"katze", name:"Katze", items:[
+      "Futtervorrat bereitstellen","Katzenklo reinigen & Ersatzstreu bereitstellen",
+      "Trinkbrunnen / Wassernapf prüfen","Tierbetreuer informieren & einweisen",
+      "Tierarzt-Kontakt bereitlegen","Kratzbaum / Lieblingsplatz zugänglich lassen"
+    ]},
+    { id:"verschliessen", name:"Haus verschliessen & wetterfest machen", items:[
+      "Alle Fenster schliessen","Rollläden / Jalousien schliessen","Türen abschliessen",
+      "Hauptwasserhahn prüfen / bei Bedarf schliessen","Heizung auf Ferienmodus stellen",
+      "Zeitschaltuhr für Licht stellen","Alarmanlage aktivieren","Mülltonnen leeren",
+      "Post / Briefkasten organisieren","Garage abschliessen"
+    ]},
+    { id:"pool", name:"Pool", items:[
+      "Poolpumpenfilter vorsorglich reinigen","pH- & Chlorwert prüfen und einstellen",
+      "Skimmerkorb leeren","Abdeckung / Poolplane anbringen","Pumpenlaufzeit für Abwesenheit prüfen"
+    ]},
+    { id:"sonstiges", name:"Sonstiges", items:[
+      "Kühlschrank leeren / verderbliche Lebensmittel verbrauchen","Standby-Geräte vom Strom nehmen",
+      "Fenster/Storen tagsüber gegen Hitze schliessen","Wichtige Dokumente & Schlüssel griffbereit legen"
+    ]}
+  ];
+
+  function uid(){ return Math.random().toString(36).slice(2,10); }
+  function buildDefaultStructure(){
+    return DEFAULT_CATEGORIES.map(c => ({ id:c.id, name:c.name, items:c.items.map(t => ({ id:uid(), text:t })) }));
+  }
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  async function kvGet(key){
+    const res = await fetch(KV_BASE()+key, { method:'GET', cache:'no-store' });
+    if(res.status === 404) return null;
+    if(!res.ok) throw new Error('kvdb GET '+res.status);
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  }
+  async function kvSet(key, value){
+    const res = await fetch(KV_BASE()+key, { method:'POST', body: JSON.stringify(value) });
+    if(!res.ok) throw new Error('kvdb POST '+res.status);
+    return true;
+  }
+  async function createBucket(){
+    const res = await fetch('https://kvdb.io/', { method:'POST' });
+    if(!res.ok) throw new Error('Bucket-Erstellung fehlgeschlagen ('+res.status+')');
+    return (await res.text()).trim();
+  }
+
+  let structure = null, checked = null, activeCat = null, syncOk = true, pollTimer = null;
+
+  async function loadState(){
+    let s=null, c=null;
+    try{ s = await kvGet('structure'); }catch(e){ console.error(e); syncOk=false; }
+    try{ c = await kvGet('checked'); }catch(e){ console.error(e); syncOk=false; }
+    if(!s){ s = { categories: buildDefaultStructure() }; await saveStructure(s); }
+    if(!c){ c = {}; await saveChecked(c); }
+    structure = s; checked = c;
+    if(!activeCat) activeCat = structure.categories[0] ? structure.categories[0].id : null;
+  }
+  async function saveStructure(s){ structure=s; try{ await kvSet('structure', s); syncOk=true; }catch(e){ console.error(e); syncOk=false; } }
+  async function saveChecked(c){ checked=c; try{ await kvSet('checked', c); syncOk=true; }catch(e){ console.error(e); syncOk=false; } }
+
+  function totalCounts(cat){
+    const total = cat.items.length;
+    const done = cat.items.filter(i => checked[i.id]).length;
+    return {done, total};
+  }
+  function overallCounts(){
+    let done=0, total=0;
+    structure.categories.forEach(c=>{ const r=totalCounts(c); done+=r.done; total+=r.total; });
+    return {done, total};
+  }
+
+  function renderSetup(state){
+    const app = document.getElementById('app');
+    if(state === 'idle'){
+      app.innerHTML = `
+        <header><div class="title-row"><div>
+          <h1>🔑 Haus-Checkliste</h1>
+          <p class="subtitle">Einmalige Einrichtung für den gemeinsamen Speicher</p>
+        </div></div></header>
+        <div class="setup-card">
+          <h2>Gemeinsamen Speicher einrichten</h2>
+          <p>Damit du und deine Frau dieselbe Liste seht, braucht die App einen gemeinsamen
+          Online-Speicherplatz (kostenlos, ohne Konto, via kvdb.io). Das machst du einmalig:</p>
+          <ol>
+            <li>Klicke auf "Speicherplatz erstellen".</li>
+            <li>Kopiere die angezeigte ID.</li>
+            <li>Öffne die Datei <code>haus-checkliste.html</code> in einem Texteditor,
+            suche die Zeile <code>const SHARED_BUCKET = "";</code> und trage die ID zwischen
+            den Anführungszeichen ein.</li>
+            <li>Lade die Datei aktualisiert hoch (z.B. auf GitHub Pages) – ab jetzt
+            nutzen alle, die den Link öffnen, denselben Speicher.</li>
+          </ol>
+          <button class="primary" id="createBucketBtn">Speicherplatz erstellen</button>
+        </div>`;
+      document.getElementById('createBucketBtn').addEventListener('click', async ()=>{
+        renderSetup('loading');
+        try{
+          const id = await createBucket();
+          renderSetup('done');
+          document.getElementById('bucketId').textContent = id;
+        }catch(e){ console.error(e); renderSetup('error'); }
+      });
+    } else if(state === 'loading'){
+      app.innerHTML = `<div class="loading-screen"><div class="spin"></div><div>Speicherplatz wird erstellt…</div></div>`;
+    } else if(state === 'done'){
+      app.innerHTML = `
+        <header><div class="title-row"><div>
+          <h1>🔑 Haus-Checkliste</h1><p class="subtitle">Speicherplatz erstellt ✓</p>
+        </div></div></header>
+        <div class="setup-card">
+          <h2>Fertig! Nur noch eintragen:</h2>
+          <p>Diese ID in <code>const SHARED_BUCKET = "";</code> einfügen:</p>
+          <div class="bucket-box" id="bucketId"></div>
+          <p>Verwende hier unbedingt eine <strong>andere</strong> ID als bei der Camp-Checkliste,
+          sonst vermischen sich die beiden Listen.</p>
+        </div>`;
+    } else if(state === 'error'){
+      app.innerHTML = `
+        <div class="setup-card">
+          <h2>Das hat nicht geklappt</h2>
+          <p>Speicherplatz konnte nicht erstellt werden – bitte Internetverbindung prüfen und erneut versuchen.</p>
+          <button class="primary" id="retryBtn">Erneut versuchen</button>
+        </div>`;
+      document.getElementById('retryBtn').addEventListener('click', ()=>renderSetup('idle'));
+    }
+  }
+
+  function render(){
+    if(!SHARED_BUCKET){ renderSetup('idle'); return; }
+    const app = document.getElementById('app');
+    const {done:oDone, total:oTotal} = overallCounts();
+    const pct = oTotal ? Math.round(oDone/oTotal*100) : 0;
+
+    const stopsHtml = structure.categories.map(cat=>{
+      const {done,total} = totalCounts(cat);
+      const complete = total>0 && done===total;
+      return `<div class="stop ${cat.id===activeCat?'active':''}" data-cat="${cat.id}">
+          ${complete?'<div class="stamp-badge">✓</div>':''}
+          <span class="icon">${ICONS[cat.id] || '🏠'}</span>
+          <span class="name">${escapeHtml(cat.name)}</span>
+          <span class="count">${done}/${total}</span>
+        </div>`;
+    }).join('') + `<div class="stop add-stop" id="addCatBtn">+ Kategorie</div>`;
+
+    const activeCategory = structure.categories.find(c=>c.id===activeCat);
+    let cardHtml = '';
+    if(activeCategory){
+      const itemsHtml = activeCategory.items.length ? activeCategory.items.map(it=>{
+        const isChecked = !!checked[it.id];
+        return `<li class="item ${isChecked?'checked':''}" data-item="${it.id}">
+          <input type="checkbox" class="chk" ${isChecked?'checked':''} data-item="${it.id}">
+          <span class="item-text">${escapeHtml(it.text)}</span>
+          <button class="rm-item" data-remove="${it.id}" title="Eintrag entfernen">✕</button>
+        </li>`;
+      }).join('') : `<div class="empty">Noch nichts hier. Füge unten den ersten Punkt hinzu.</div>`;
+      const {done,total} = totalCounts(activeCategory);
+      cardHtml = `<div class="card">
+          <div class="card-head">
+            <h2>${ICONS[activeCategory.id] || '🏠'} ${escapeHtml(activeCategory.name)}</h2>
+            <span class="cat-count">${done}/${total} erledigt</span>
+          </div>
+          <ul class="items">${itemsHtml}</ul>
+          <form class="add-row" id="addItemForm" data-cat="${activeCategory.id}">
+            <input type="text" id="newItemText" placeholder="Neuer Punkt…" autocomplete="off">
+            <button type="submit">Hinzufügen</button>
+          </form>
+          <div style="text-align:right;margin-bottom:14px;">
+            <button class="del-cat" id="delCatBtn" data-cat="${activeCategory.id}">Kategorie löschen</button>
+          </div>
+        </div>`;
+    }
+
+    app.innerHTML = `
+      <header>
+        <div class="title-row">
+          <div>
+            <h1>🔑 Haus-Checkliste</h1>
+            <p class="subtitle">Bereit fürs Verreisen – Haus, Garten & Tiere versorgt</p>
+            <div class="sync-note"><span class="dot ${syncOk?'':'err'}"></span>${syncOk ? 'Mit gemeinsamem Speicher synchronisiert' : 'Sync-Problem – Änderungen evtl. nicht gespeichert'}</div>
+          </div>
+          <button class="btn-ghost" id="resetBtn">↺ Für nächste Abreise zurücksetzen</button>
+        </div>
+        <div class="trail">
+          <div class="trail-track">
+            <div class="trail-fill" style="width:${pct}%"></div>
+            <div class="trail-marker" style="left:${pct}%">${pct>=100 ? '🔒' : '🔑'}</div>
+          </div>
+          <div class="trail-caption"><span>${oDone} von ${oTotal} Punkten erledigt</span><span>${pct}%</span></div>
+        </div>
+        <div class="stops">${stopsHtml}</div>
+      </header>
+      ${cardHtml}
+      <div class="foot-note">Wird automatisch mit deiner Frau geteilt</div>
+    `;
+    attachEvents();
+  }
+
+  function attachEvents(){
+    document.querySelectorAll('.stop[data-cat]').forEach(el=>{
+      el.addEventListener('click', ()=>{ activeCat = el.getAttribute('data-cat'); render(); });
+    });
+    const addCatBtn = document.getElementById('addCatBtn');
+    if(addCatBtn){
+      addCatBtn.addEventListener('click', async ()=>{
+        const name = prompt('Name der neuen Kategorie (z.B. "Fische"):');
+        if(!name || !name.trim()) return;
+        const id = 'cat_' + uid();
+        structure.categories.push({ id, name:name.trim(), items:[] });
+        activeCat = id;
+        await saveStructure(structure);
+        render();
+      });
+    }
+    document.querySelectorAll('.chk').forEach(cb=>{
+      cb.addEventListener('change', async ()=>{
+        const itemId = cb.getAttribute('data-item');
+        checked[itemId] = cb.checked;
+        await saveChecked(checked);
+        render();
+      });
+    });
+    document.querySelectorAll('[data-remove]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const itemId = btn.getAttribute('data-remove');
+        const cat = structure.categories.find(c=>c.id===activeCat);
+        cat.items = cat.items.filter(i=>i.id!==itemId);
+        await saveStructure(structure);
+        render();
+      });
+    });
+    const addForm = document.getElementById('addItemForm');
+    if(addForm){
+      addForm.addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const input = document.getElementById('newItemText');
+        const text = input.value.trim();
+        if(!text) return;
+        const cat = structure.categories.find(c=>c.id===addForm.getAttribute('data-cat'));
+        cat.items.push({ id:uid(), text });
+        input.value='';
+        await saveStructure(structure);
+        render();
+      });
+    }
+    const delCatBtn = document.getElementById('delCatBtn');
+    if(delCatBtn){
+      delCatBtn.addEventListener('click', async ()=>{
+        const catId = delCatBtn.getAttribute('data-cat');
+        if(!confirm('Diese Kategorie inkl. aller Einträge wirklich löschen?')) return;
+        structure.categories = structure.categories.filter(c=>c.id!==catId);
+        activeCat = structure.categories[0] ? structure.categories[0].id : null;
+        await saveStructure(structure);
+        render();
+      });
+    }
+    const resetBtn = document.getElementById('resetBtn');
+    if(resetBtn){
+      resetBtn.addEventListener('click', async ()=>{
+        if(!confirm('Alle Häkchen für die nächste Abreise zurücksetzen? Die Liste selbst bleibt erhalten.')) return;
+        checked = {};
+        await saveChecked(checked);
+        render();
+      });
+    }
+  }
+
+  function startPolling(){
+    if(pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(async ()=>{
+      if(!SHARED_BUCKET) return;
+      try{
+        const [s,c] = await Promise.all([kvGet('structure'), kvGet('checked')]);
+        if(s) structure = s;
+        if(c) checked = c;
+        syncOk = true;
+        render();
+      }catch(e){ console.error(e); syncOk = false; render(); }
+    }, 8000);
+    document.addEventListener('visibilitychange', async ()=>{
+      if(document.visibilityState === 'visible' && SHARED_BUCKET){
+        try{
+          const [s,c] = await Promise.all([kvGet('structure'), kvGet('checked')]);
+          if(s) structure = s; if(c) checked = c;
+          syncOk = true; render();
+        }catch(e){ console.error(e); }
+      }
+    });
+  }
+
+  if(SHARED_BUCKET){
+    loadState().then(()=>{ render(); startPolling(); }).catch(err=>{
+      console.error(err);
+      document.getElementById('app').innerHTML = '<div class="loading-screen">Etwas ist schiefgelaufen beim Laden. Bitte Seite neu laden.</div>';
+    });
+  } else {
+    renderSetup('idle');
+  }
+
+})();
+</script>
+</body>
+</html>

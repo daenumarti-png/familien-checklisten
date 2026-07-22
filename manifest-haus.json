@@ -1,0 +1,9 @@
+{
+  "name": "Haus-Checkliste",
+  "short_name": "Haus-Checkliste",
+  "start_url": "haus-checkliste.html",
+  "display": "standalone",
+  "background_color": "#EFE6D2",
+  "theme_color": "#2B3A2E",
+  "icons": []
+}
