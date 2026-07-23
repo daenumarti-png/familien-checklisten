@@ -198,12 +198,13 @@
   let structure = null, progress = null, activeCat = null, syncOk = true, pollTimer = null;
 
   async function loadState(){
-    let s=null, p=null;
-    try{ s = await kvGet('structure'); }catch(e){ console.error(e); syncOk=false; }
-    try{ p = await kvGet('progress'); }catch(e){ console.error(e); syncOk=false; }
-    if(!s){ s = { categories: buildDefaultStructure() }; await saveStructure(s); }
-    if(!p){ const y=new Date().getFullYear(); p = { currentYear:y, years:[y], checked:{ [y]:{} } }; await saveProgress(p); }
-    structure = s; progress = p;
+    const s = await kvGet('structure');
+    const p = await kvGet('progress');
+    let finalS = s, finalP = p;
+    if(finalS === null){ finalS = { categories: buildDefaultStructure() }; await saveStructure(finalS); }
+    if(finalP === null){ const y=new Date().getFullYear(); finalP = { currentYear:y, years:[y], checked:{ [y]:{} } }; await saveProgress(finalP); }
+    structure = finalS; progress = finalP;
+    syncOk = true;
     if(!activeCat) activeCat = structure.categories[0] ? structure.categories[0].id : null;
   }
   async function saveStructure(s){
@@ -491,7 +492,11 @@
   if(SHARED_BUCKET){
     loadState().then(()=>{ render(); startPolling(); }).catch(err=>{
       console.error(err);
-      document.getElementById('app').innerHTML = '<div class="loading-screen">Etwas ist schiefgelaufen beim Laden. Bitte Seite neu laden.</div>';
+      document.getElementById('app').innerHTML =
+        '<div class="loading-screen">⚠️ Daten konnten nicht geladen werden (Netzwerkproblem). '
+        + 'Deine gespeicherten Daten sind nicht verloren – bitte einfach erneut versuchen.'
+        + '<br><br><button class="primary" id="retryLoadBtn">Erneut versuchen</button></div>';
+      document.getElementById('retryLoadBtn').addEventListener('click', ()=>location.reload());
     });
   } else {
     renderSetup('idle');
