@@ -96,7 +96,7 @@
   // ====== Konfiguration: gemeinsamer Cloud-Speicher (kvdb.io, ohne Login) ======
   // Nach der Einrichtung hier die Bucket-ID eintragen, z.B. const SHARED_BUCKET = "AbCdEfGh12345";
   // Verwende eine ANDERE ID als bei der Camp-Checkliste, damit sich die Listen nicht vermischen.
-  const SHARED_BUCKET = "6HRbdT3LKeB6LtJft26Aqh";
+  const SHARED_BUCKET = "";
   const KV_BASE = () => `https://kvdb.io/${SHARED_BUCKET}/`;
 
   const ICONS = { garten:"🌿", wachteln:"🐦", katze:"🐱", verschliessen:"🔒", pool:"🏊", sonstiges:"🧺" };
@@ -390,8 +390,12 @@
 
   function startPolling(){
     if(pollTimer) clearInterval(pollTimer);
+    const isTyping = () => {
+      const el = document.activeElement;
+      return el && el.id === 'newItemText' && el.value.length > 0;
+    };
     pollTimer = setInterval(async ()=>{
-      if(!SHARED_BUCKET) return;
+      if(!SHARED_BUCKET || isTyping()) return;
       try{
         const [s,c] = await Promise.all([kvGet('structure'), kvGet('checked')]);
         if(s) structure = s;
@@ -401,7 +405,7 @@
       }catch(e){ console.error(e); syncOk = false; render(); }
     }, 8000);
     document.addEventListener('visibilitychange', async ()=>{
-      if(document.visibilityState === 'visible' && SHARED_BUCKET){
+      if(document.visibilityState === 'visible' && SHARED_BUCKET && !isTyping()){
         try{
           const [s,c] = await Promise.all([kvGet('structure'), kvGet('checked')]);
           if(s) structure = s; if(c) checked = c;
