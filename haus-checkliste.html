@@ -153,8 +153,12 @@
     if(!res.ok) throw new Error('kvdb POST '+res.status);
     return true;
   }
-  async function createBucket(){
-    const res = await fetch('https://kvdb.io/', { method:'POST' });
+  async function createBucket(email){
+    const res = await fetch('https://kvdb.io/', {
+      method:'POST',
+      headers: { 'Content-Type':'application/x-www-form-urlencoded' },
+      body: 'email=' + encodeURIComponent(email)
+    });
     if(!res.ok) throw new Error('Bucket-Erstellung fehlgeschlagen ('+res.status+')');
     return (await res.text()).trim();
   }
@@ -205,12 +209,17 @@
             <li>Lade die Datei aktualisiert hoch (z.B. auf GitHub Pages) – ab jetzt
             nutzen alle, die den Link öffnen, denselben Speicher.</li>
           </ol>
+          <div class="add-row" style="margin-bottom:14px;">
+            <input type="email" id="setupEmail" placeholder="E-Mail-Adresse (für kvdb.io, nur zur Verwaltung)" autocomplete="email">
+          </div>
           <button class="primary" id="createBucketBtn">Speicherplatz erstellen</button>
         </div>`;
       document.getElementById('createBucketBtn').addEventListener('click', async ()=>{
+        const email = document.getElementById('setupEmail').value.trim();
+        if(!email){ alert('Bitte eine E-Mail-Adresse eingeben.'); return; }
         renderSetup('loading');
         try{
-          const id = await createBucket();
+          const id = await createBucket(email);
           renderSetup('done');
           document.getElementById('bucketId').textContent = id;
         }catch(e){ console.error(e); renderSetup('error'); }
